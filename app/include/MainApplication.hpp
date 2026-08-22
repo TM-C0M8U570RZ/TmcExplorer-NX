@@ -35,6 +35,7 @@ class MainApplication : public pu::ui::Application {
         using Application::Application;
         PU_SMART_CTOR(MainApplication)
         ~MainApplication();
+        void resetLayout();
 
         // We need to define this, and use it to initialize everything
         void OnLoad() override;

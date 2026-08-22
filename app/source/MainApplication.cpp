@@ -1,5 +1,5 @@
 #include <MainApplication.hpp>
-
+#include "BrowserLayout.hpp"
 // Implement all the layout/application functions here
 
 CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
@@ -12,6 +12,10 @@ CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
     sdmcItem->AddOnKey([this]{
         this->app->Close();
     }, HidNpadButton_Plus);
+    sdmcItem->AddOnKey([this]{
+        tmc::ExplorerNX::BrowserLayout::Ref sdmcBrowser = tmc::ExplorerNX::BrowserLayout::New(this->app);
+        this->app->LoadLayout(sdmcBrowser);
+    });
     this->partitionSelector->AddItem(sdmcItem);
 
     pu::ui::elm::MenuItem::Ref prodinfofItem = pu::ui::elm::MenuItem::New("prodinfof:");
@@ -19,6 +23,10 @@ CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
     prodinfofItem->AddOnKey([this]{
         this->app->Close();
     }, HidNpadButton_Plus);
+    prodinfofItem->AddOnKey([this]{
+        tmc::ExplorerNX::BrowserLayout::Ref prodinfofBrowser = tmc::ExplorerNX::BrowserLayout::New(this->app, "prodinfof:/");
+        this->app->LoadLayout(prodinfofBrowser);
+    });
     this->partitionSelector->AddItem(prodinfofItem);
 
     pu::ui::elm::MenuItem::Ref safeItem = pu::ui::elm::MenuItem::New("safe:");
@@ -26,6 +34,10 @@ CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
     safeItem->AddOnKey([this]{
         this->app->Close();
     }, HidNpadButton_Plus);
+    safeItem->AddOnKey([this]{
+        tmc::ExplorerNX::BrowserLayout::Ref safeBrowser = tmc::ExplorerNX::BrowserLayout::New(this->app, "safe:/");
+        this->app->LoadLayout(safeBrowser);
+    });
     this->partitionSelector->AddItem(safeItem);
 
     pu::ui::elm::MenuItem::Ref systemItem = pu::ui::elm::MenuItem::New("system:");
@@ -33,6 +45,10 @@ CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
     systemItem->AddOnKey([this]{
         this->app->Close();
     }, HidNpadButton_Plus);
+    systemItem->AddOnKey([this]{
+        tmc::ExplorerNX::BrowserLayout::Ref systemBrowser = tmc::ExplorerNX::BrowserLayout::New(this->app, "system:/");
+        this->app->LoadLayout(systemBrowser);
+    });
     this->partitionSelector->AddItem(systemItem);
 
     pu::ui::elm::MenuItem::Ref userItem = pu::ui::elm::MenuItem::New("user:");
@@ -40,6 +56,10 @@ CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
     userItem->AddOnKey([this]{
         this->app->Close();
     }, HidNpadButton_Plus);
+    userItem->AddOnKey([this]{
+        tmc::ExplorerNX::BrowserLayout::Ref userBrowser = tmc::ExplorerNX::BrowserLayout::New(this->app, "user:/");
+        this->app->LoadLayout(userBrowser);
+    });
     this->partitionSelector->AddItem(userItem);
 
     this->Add(this->greeting);
@@ -54,6 +74,11 @@ MainApplication::~MainApplication()
     tmc::ExplorerNX::unmountEmmcPartition("user");
 }
 
+void MainApplication::resetLayout()
+{
+    this->LoadLayout(this->layout);
+}
+
 void MainApplication::OnLoad() {
     tmc::ExplorerNX::mountEmmcPartition("prodinfof");
     tmc::ExplorerNX::mountEmmcPartition("safe");
@@ -65,37 +90,4 @@ void MainApplication::OnLoad() {
     // Load the layout. In applications layouts are loaded, not added into a container (you don't select an added layout, just load it from this function)
     // Simply explained: loading layout = the application will render that layout in the very next frame
     this->LoadLayout(this->layout);
-
-    // Set a function when input is caught. This input handling will be the first one to be handled (before Layout or any Elements)
-    // Using a lambda function here to simplify things
-    // You can use member functions via std::bind() C++ wrapper
-    this->SetOnInput([&](const u64 keys_down, const u64 keys_up, const u64 keys_held, const pu::ui::TouchPoint touch_pos) {
-         // If X is pressed, start with our dialog questions!
-        if(keys_down & HidNpadButton_X) {
-            int opt = this->CreateShowDialog("Question", "Do you like apples?", { "Yes!", "No...", "Cancel" }, true); // (using latest option as cancel option)
-            // -1 and -2 are similar, but if the user cancels manually -1 is set, other types or cancel should be -2.
-            if((opt == -1) || (opt == -2))  {
-                this->CreateShowDialog("Cancel", "Last question was canceled.", { "Ok" }, true); // If we will ignore the option, it doesn't matter if this is true or false
-            }
-            else {
-                // Otherwise, opt will be the index of the options we passed to the dialog
-                switch(opt) {
-                    // "Yes!" was selected
-                    case 0:  {
-                        this->CreateShowDialog("Answer", "Really? I like apples too!", { "Ok" }, true); // Same here ^
-                        break;
-                    }
-                    // "No..." was selected
-                    case 1: {
-                        this->CreateShowDialog("Answer", "Oh, bad news then...", { "Ok" }, true); // And here ^
-                        break;
-                    }
-                }
-            }
-        }
-        // If + is pressed, exit application
-        else if(keys_down & HidNpadButton_Plus) {
-            this->Close();
-        }
-    });
 }
