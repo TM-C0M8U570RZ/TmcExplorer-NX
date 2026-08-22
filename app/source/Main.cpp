@@ -28,6 +28,7 @@ int main() {
     renderer_opts.AddInputNpadStyleTag(HidNpadStyleSet_NpadStandard);
     renderer_opts.AddInputNpadIdType(HidNpadIdType_Handheld);
     renderer_opts.AddInputNpadIdType(HidNpadIdType_No1);
+    renderer_opts.UseRomfs();
 
     auto renderer = pu::ui::render::Renderer::New(renderer_opts);
 

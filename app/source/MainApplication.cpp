@@ -2,17 +2,65 @@
 
 // Implement all the layout/application functions here
 
-CustomLayout::CustomLayout() : Layout::Layout() {
-    // Create the TextBlock instance with the text we want
-    this->helloText = pu::ui::elm::TextBlock::New(300, 300, "Press X to answer my question");
-    
-    // Add the instance to the layout. IMPORTANT! this MUST be done for them to be used, having them as members is not enough (just a simple way to keep them)
-    this->Add(this->helloText);
+CustomLayout::CustomLayout(MainApplication* app) : Layout::Layout() {
+    this->app = app;
+    this->greeting = pu::ui::elm::TextBlock::New(10, 10, "Please select a partition or press + to exit");
+    this->partitionSelector = pu::ui::elm::Menu::New(0, 50, 1920, pu::ui::Color(0, 0, 127, 255), pu::ui::Color(127, 127, 255, 255), 128, 5);
+
+    pu::ui::elm::MenuItem::Ref sdmcItem = pu::ui::elm::MenuItem::New("sdmc:");
+    sdmcItem->SetIcon(pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/sd.png")));
+    sdmcItem->AddOnKey([this]{
+        this->app->Close();
+    }, HidNpadButton_Plus);
+    this->partitionSelector->AddItem(sdmcItem);
+
+    pu::ui::elm::MenuItem::Ref prodinfofItem = pu::ui::elm::MenuItem::New("prodinfof:");
+    prodinfofItem->SetIcon(pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/emmc.png")));
+    prodinfofItem->AddOnKey([this]{
+        this->app->Close();
+    }, HidNpadButton_Plus);
+    this->partitionSelector->AddItem(prodinfofItem);
+
+    pu::ui::elm::MenuItem::Ref safeItem = pu::ui::elm::MenuItem::New("safe:");
+    safeItem->SetIcon(pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/emmc.png")));
+    safeItem->AddOnKey([this]{
+        this->app->Close();
+    }, HidNpadButton_Plus);
+    this->partitionSelector->AddItem(safeItem);
+
+    pu::ui::elm::MenuItem::Ref systemItem = pu::ui::elm::MenuItem::New("system:");
+    systemItem->SetIcon(pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/emmc.png")));
+    systemItem->AddOnKey([this]{
+        this->app->Close();
+    }, HidNpadButton_Plus);
+    this->partitionSelector->AddItem(systemItem);
+
+    pu::ui::elm::MenuItem::Ref userItem = pu::ui::elm::MenuItem::New("user:");
+    userItem->SetIcon(pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/emmc.png")));
+    userItem->AddOnKey([this]{
+        this->app->Close();
+    }, HidNpadButton_Plus);
+    this->partitionSelector->AddItem(userItem);
+
+    this->Add(this->greeting);
+    this->Add(this->partitionSelector);
+}
+
+MainApplication::~MainApplication()
+{
+    tmc::ExplorerNX::unmountEmmcPartition("prodinfof");
+    tmc::ExplorerNX::unmountEmmcPartition("safe");
+    tmc::ExplorerNX::unmountEmmcPartition("system");
+    tmc::ExplorerNX::unmountEmmcPartition("user");
 }
 
 void MainApplication::OnLoad() {
-    // Create the layout (calling the smart constructor above)
-    this->layout = CustomLayout::New();
+    tmc::ExplorerNX::mountEmmcPartition("prodinfof");
+    tmc::ExplorerNX::mountEmmcPartition("safe");
+    tmc::ExplorerNX::mountEmmcPartition("system");
+    tmc::ExplorerNX::mountEmmcPartition("user");
+
+    this->layout = CustomLayout::New(this);
 
     // Load the layout. In applications layouts are loaded, not added into a container (you don't select an added layout, just load it from this function)
     // Simply explained: loading layout = the application will render that layout in the very next frame
