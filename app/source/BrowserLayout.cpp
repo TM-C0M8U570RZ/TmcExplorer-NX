@@ -8,7 +8,7 @@ BrowserLayout::BrowserLayout(MainApplication* app, const std::filesystem::path& 
 {
     this->app = app;
     this->currentDirectory = currentDirectory;
-    this->directoryView = pu::ui::elm::Menu::New(0, 50, 1920, pu::ui::Color(0, 0, 127, 255), pu::ui::Color(127, 127, 255, 255), 128, 7);
+    this->directoryView = pu::ui::elm::Menu::New(0, 50, 1920, pu::ui::Color(0, 0, 127, 255), pu::ui::Color(127, 127, 255, 255), 128, 8);
     this->controlsRibbon = pu::ui::elm::TextBlock::New(10, 10, "A: Enter focused directory | B: Up one level | Y: Multiselect | X: Context menu");
     this->directoryIcon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/directory.png"));
     this->directorySelIcon = pu::sdl2::TextureHandle::New(pu::ui::render::LoadImageFromFile("romfs:/directory_sel.png"));
