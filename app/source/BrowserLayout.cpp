@@ -46,18 +46,126 @@ BrowserLayout::BrowserLayout(MainApplication* app, const std::filesystem::path& 
                 this->app->LoadLayout(chosenDirectoryView);
             }
         }, HidNpadButton_B);
-        entry->AddOnKey([this]{
-            std::stringstream debugText;
-
-            debugText << "Current Directory: " << this->currentDirectory.string() << std::endl << std::endl;
-            debugText << "Has Parent Path: " << std::boolalpha << this->currentDirectory.has_parent_path() << std::endl << std::endl;
-            if (this->currentDirectory.has_parent_path())
-                debugText << "Parent Path: " << this->currentDirectory.parent_path() << std::endl << std::endl;
-            debugText << "Root Name: " << this->currentDirectory.root_name() << std::endl << std::endl;
-            debugText << "Filename: " << this->currentDirectory.filename();
-
-            this->app->CreateShowDialog("Debug dialog", debugText.str(), {"Cancel"}, true);
-        }, HidNpadButton_Minus);
+        // Uncomment the code below to enable debug mode.
+        // entry->AddOnKey([this]{
+        //     std::stringstream debugText;
+        //
+        //     debugText << "Current Directory: " << this->currentDirectory.string() << std::endl << std::endl;
+        //     debugText << "Has Parent Path: " << std::boolalpha << this->currentDirectory.has_parent_path() << std::endl << std::endl;
+        //     if (this->currentDirectory.has_parent_path())
+        //         debugText << "Parent Path: " << this->currentDirectory.parent_path() << std::endl << std::endl;
+        //     debugText << "Root Name: " << this->currentDirectory.root_name() << std::endl << std::endl;
+        //     debugText << "Filename: " << this->currentDirectory.filename();
+        //
+        //     this->app->CreateShowDialog("Debug dialog", debugText.str(), {"Cancel"}, true);
+        // }, HidNpadButton_Minus);
+        entry->AddOnKey([this, entry]{
+            if (entry->GetIconTexture() == this->directoryIcon)
+            {
+                entry->SetIcon(this->directorySelIcon);
+            }
+            else if (entry->GetIconTexture() == this->directorySelIcon)
+            {
+                entry->SetIcon(this->directoryIcon);
+            }
+            else if (entry->GetIconTexture() == this->fileIcon)
+            {
+                entry->SetIcon(this->fileSelIcon);
+            }
+            else if (entry->GetIconTexture() == this->fileSelIcon)
+            {
+                entry->SetIcon(this->fileIcon);
+            }
+        }, HidNpadButton_Y);
+        entry->AddOnKey([this, entry]{
+            if (this->app->isClipboardEmpty())
+            {
+                s32 result = this->app->CreateShowDialog("context menu", "What would you like to do?", {"Create new directory", "Move selected", "Copy selected", "Delete selected", "Rename focused", "View properties of focused", "Cancel"}, true);
+                if (result == 0)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::create_directories(newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to create directory!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                }
+                else if (result == 2)
+                {
+                    std::vector<std::filesystem::path> selPaths;
+                    std::vector<pu::ui::elm::MenuItem::Ref> menuItems = this->directoryView->GetItems();
+                    for (u64 i = 0; i < menuItems.size(); i++)
+                    {
+                        if (menuItems[i]->GetIconTexture() == this->fileSelIcon || menuItems[i]->GetIconTexture() == this->directorySelIcon)
+                        {
+                            selPaths.push_back(this->currentDirectory / std::filesystem::path(menuItems[i]->GetName()));
+                        }
+                    }
+                    this->app->setClipboard({.moving = false, .paths = selPaths});
+                }
+            }
+            else
+            {
+                s32 result = this->app->CreateShowDialog("context menu", "What would you like to do?", {"Paste from clipboard", "Create new directory", "Move selected", "Copy selected", "Delete selected", "Rename focused", "View properties of focused", "Cancel"}, true);
+                if (result == 0)
+                {
+                    Clipboard clip = this->app->getClipboard();
+                    if (!clip.moving)
+                    {
+                        u64 fileCountProgress = 0;
+                        u64 bytesProgress = 0;
+                        for (u64 i = 0; i < clip.paths.size(); i++)
+                        {
+                            copyFiles(clip.paths[i], this->currentDirectory / clip.paths[i].filename(), &fileCountProgress, &bytesProgress);
+                        }
+                    }
+                    else
+                    {
+                        // will implement moving later
+                    }
+                    BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                    this->app->LoadLayout(refreshed);
+                }
+                else if (result == 1)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::create_directories(newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to create directory!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                }
+                else if (result == 3)
+                {
+                    std::vector<std::filesystem::path> selPaths;
+                    std::vector<pu::ui::elm::MenuItem::Ref> menuItems = this->directoryView->GetItems();
+                    for (u64 i = 0; i < menuItems.size(); i++)
+                    {
+                        if (menuItems[i]->GetIconTexture() == this->fileSelIcon || menuItems[i]->GetIconTexture() == this->directorySelIcon)
+                        {
+                            selPaths.push_back(this->currentDirectory / std::filesystem::path(menuItems[i]->GetName()));
+                        }
+                    }
+                    this->app->setClipboard({.moving = false, .paths = selPaths});
+                }
+            }
+        }, HidNpadButton_X);
 
         this->directoryView->AddItem(entry);
     }
@@ -81,6 +189,69 @@ BrowserLayout::BrowserLayout(MainApplication* app, const std::filesystem::path& 
                 this->app->LoadLayout(chosenDirectoryView);
             }
         }, HidNpadButton_B);
+        dummy->AddOnKey([this, dummy]{
+            if (this->app->isClipboardEmpty())
+            {
+                s32 result = this->app->CreateShowDialog("context menu", "What would you like to do?", {"Create new directory", "Cancel"}, true);
+                if (result == 0)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::create_directories(newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to create directory!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                }
+            }
+            else
+            {
+                s32 result = this->app->CreateShowDialog("context menu", "What would you like to do?", {"Paste from clipboard", "Create new directory", "Cancel"}, true);
+                if (result == 0)
+                {
+                    Clipboard clip = this->app->getClipboard();
+                    if (!clip.moving)
+                    {
+                        u64 fileCountProgress = 0;
+                        u64 bytesProgress = 0;
+                        for (u64 i = 0; i < clip.paths.size(); i++)
+                        {
+                            copyFiles(clip.paths[i], this->currentDirectory / clip.paths[i].filename(), &fileCountProgress, &bytesProgress);
+                        }
+                    }
+                    else
+                    {
+                        // will implement moving later
+                    }
+                    BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                    this->app->LoadLayout(refreshed);
+                }
+                else if (result == 1)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::create_directories(newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to create directory!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                }
+            }
+        }, HidNpadButton_X);
 
         this->directoryView->AddItem(dummy);
     }

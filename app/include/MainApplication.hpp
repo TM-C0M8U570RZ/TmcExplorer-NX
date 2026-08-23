@@ -25,17 +25,28 @@ class CustomLayout : public pu::ui::Layout {
 };
 
 // Define your application (can't instantiate base class, so need to make a derived one)
+
+using Clipboard = struct Clipboard {
+    bool moving;
+    std::vector<std::filesystem::path> paths;
+};
+
 class MainApplication : public pu::ui::Application {
     private:
 
         // Layout instance
         CustomLayout::Ref layout;
+        Clipboard clip;
     
     public:
         using Application::Application;
         PU_SMART_CTOR(MainApplication)
         ~MainApplication();
         void resetLayout();
+        Clipboard getClipboard();
+        void setClipboard(const Clipboard& clip);
+        bool isClipboardEmpty();
+        void clearClipboard();
 
         // We need to define this, and use it to initialize everything
         void OnLoad() override;

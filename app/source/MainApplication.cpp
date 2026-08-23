@@ -79,11 +79,32 @@ void MainApplication::resetLayout()
     this->LoadLayout(this->layout);
 }
 
+Clipboard MainApplication::getClipboard()
+{
+    return this->clip;
+}
+
+void MainApplication::setClipboard(const Clipboard& clip)
+{
+    this->clip = clip;
+}
+
+bool MainApplication::isClipboardEmpty()
+{
+    return this->clip.paths.empty();
+}
+
+void MainApplication::clearClipboard()
+{
+    this->clip = {.moving = false, .paths = {}};
+}
+
 void MainApplication::OnLoad() {
     tmc::ExplorerNX::mountEmmcPartition("prodinfof");
     tmc::ExplorerNX::mountEmmcPartition("safe");
     tmc::ExplorerNX::mountEmmcPartition("system");
     tmc::ExplorerNX::mountEmmcPartition("user");
+    this->clearClipboard();
 
     this->layout = CustomLayout::New(this);
 
