@@ -104,6 +104,7 @@ void MainApplication::OnLoad() {
     tmc::ExplorerNX::mountEmmcPartition("safe");
     tmc::ExplorerNX::mountEmmcPartition("system");
     tmc::ExplorerNX::mountEmmcPartition("user");
+
     this->clearClipboard();
 
     this->layout = CustomLayout::New(this);

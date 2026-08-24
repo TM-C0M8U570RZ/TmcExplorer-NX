@@ -119,10 +119,105 @@ bool getFilenameFromKeyboard(char* outStr, std::size_t maxLen)
         }
 
         if (newPath.string().back() == ' ' || newPath.string().back() == '.') return false;
+        if (newPath.string().empty()) return false;
         return true;
     }
     return false;
 
+}
+
+u64 enumerateBytes(const std::filesystem::path& p)
+{
+    if (std::filesystem::is_regular_file(p)) return std::filesystem::file_size(p);
+    u64 bytes = 0;
+    for (auto& e: std::filesystem::recursive_directory_iterator(p))
+    {
+        if (std::filesystem::is_regular_file(e.path())) bytes += std::filesystem::file_size(e.path());
+    }
+    return bytes;
+}
+
+u64 enumerateFiles(const std::filesystem::path& p)
+{
+    if (std::filesystem::is_regular_file(p)) return 1;
+    u64 files = 0;
+    for (auto& e: std::filesystem::recursive_directory_iterator(p))
+    {
+        if (std::filesystem::is_regular_file(e.path())) files++;
+    }
+    return files;
+}
+
+std::string beautifyByteCount(u64 bytes)
+{
+    if (bytes < 1024) return std::to_string(bytes) + "B";
+    const char* units[] = {"KiB", "MiB", "GiB", "TiB"};
+    for (u8 i = 0; i < 4; i++)
+    {
+        bytes >>= 10;
+        if (bytes < 1024) return std::to_string(bytes) + std::string(units[i]);
+    }
+    // this should never happen on an SD card or eMMC as this requires storage capacities measured in PiB, but I added this to silence compile-time warnings.
+    return std::to_string(bytes) + "TiB";
+}
+
+void deleteFiles(const std::filesystem::path& p, u64* fileCountProgress, u64* bytesProgress)
+{
+    if (std::filesystem::is_regular_file(p))
+    {
+        u64 fileSize = std::filesystem::file_size(p);
+        std::filesystem::remove(p);
+        (*bytesProgress) += fileSize;
+        (*fileCountProgress)++;
+    }
+    else if (std::filesystem::is_directory(p))
+    {
+        for (auto& e: std::filesystem::directory_iterator(p))
+        {
+            deleteFiles(e.path(), fileCountProgress, bytesProgress);
+        }
+        // the directory should be empty after the recursions.
+        std::filesystem::remove(p);
+    }
+}
+
+std::string extractPartition(const std::filesystem::path& p)
+{
+    std::size_t found = p.string().find(':');
+    if (found != std::string::npos)
+    {
+        return p.string().substr(0, found + 1);
+    }
+    return p.string();
+}
+
+void moveFiles(const std::filesystem::path& source, const std::filesystem::path& destination, u64* fileCountProgress, u64* bytesProgress)
+{
+    if (extractPartition(source) == extractPartition(destination))
+    {
+        if (std::filesystem::is_regular_file(source))
+        {
+            std::filesystem::rename(source, destination);
+            (*fileCountProgress)++;
+            (*bytesProgress) += std::filesystem::file_size(destination);
+        }
+        else
+        {
+            for (auto& p: std::filesystem::directory_iterator(source))
+            {
+                std::filesystem::create_directories(destination);
+                moveFiles(p.path(), destination / p.path().filename(), fileCountProgress, bytesProgress);
+            }
+            std::filesystem::remove(source);
+        }
+    }
+    else
+    {
+        u64 dummy1 = 0;
+        u64 dummy2 = 0;
+        copyFiles(source, destination, fileCountProgress, bytesProgress);
+        deleteFiles(source, &dummy1, &dummy2);
+    }
 }
 
 }
