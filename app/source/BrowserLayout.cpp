@@ -159,6 +159,44 @@ BrowserLayout::BrowserLayout(MainApplication* app, const std::filesystem::path& 
                     ProgressLayout::Ref pl = ProgressLayout::New(this->app, this->currentDirectory, selPaths);
                     this->app->LoadLayout(pl);
                 }
+                else if (result == 5)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::path currentName = this->currentDirectory / std::filesystem::path(this->directoryView->GetSelectedItem()->GetName());
+                        std::filesystem::rename(currentName, newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to rename file!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                    delete[] outStr;
+                }
+                else if (result == 6)
+                {
+                    std::stringstream ss;
+                    std::filesystem::path currentName = this->currentDirectory / std::filesystem::path(this->directoryView->GetSelectedItem()->GetName());
+                    ss << "Fully-qualified path: " << currentName.string() << std::endl;
+                    if (std::filesystem::is_directory(currentName))
+                    {
+                        ss << "Filesystem object type: Directory" << std::endl;
+                        ss << "File count in directory: " << enumerateFiles(currentName) << std::endl;
+                        ss << "Total file size in directory: " << beautifyByteCount(enumerateBytes(currentName));
+                    }
+                    else if (std::filesystem::is_regular_file(currentName))
+                    {
+                        ss << "Filesystem object type: File" << std::endl;
+                        if (currentName.has_extension()) ss << "Extension: " << currentName.extension().string() << std::endl;
+                        ss << "Size of file: " << beautifyByteCount(std::filesystem::file_size(currentName));
+                    }
+                    this->app->CreateShowDialog("Properties of " + currentName.filename().string(), ss.str(), {"OK"}, true);
+                }
             }
             else
             {
@@ -244,6 +282,44 @@ BrowserLayout::BrowserLayout(MainApplication* app, const std::filesystem::path& 
                     }
                     ProgressLayout::Ref pl = ProgressLayout::New(this->app, this->currentDirectory, selPaths);
                     this->app->LoadLayout(pl);
+                }
+                else if (result == 6)
+                {
+                    char* outStr = new char[256];
+                    memset(outStr, 0, 256);
+                    bool success = getFilenameFromKeyboard(outStr, 256);
+                    if (success)
+                    {
+                        std::filesystem::path newDir = this->currentDirectory / std::filesystem::path(std::string(outStr));
+                        std::filesystem::path currentName = this->currentDirectory / std::filesystem::path(this->directoryView->GetSelectedItem()->GetName());
+                        std::filesystem::rename(currentName, newDir);
+                        BrowserLayout::Ref refreshed = BrowserLayout::New(this->app, this->currentDirectory);
+                        this->app->LoadLayout(refreshed);
+                    }
+                    else
+                    {
+                        this->app->CreateShowDialog("ERROR!", "Failed to rename file!  Is the name valid?  Did you accidentally cancel the keyboard input?", {"OK"}, true);
+                    }
+                    delete[] outStr;
+                }
+                else if (result == 7)
+                {
+                    std::stringstream ss;
+                    std::filesystem::path currentName = this->currentDirectory / std::filesystem::path(this->directoryView->GetSelectedItem()->GetName());
+                    ss << "Fully-qualified path: " << currentName.string() << std::endl;
+                    if (std::filesystem::is_directory(currentName))
+                    {
+                        ss << "Filesystem object type: Directory" << std::endl;
+                        ss << "File count in directory: " << enumerateFiles(currentName) << std::endl;
+                        ss << "Total file size in directory: " << beautifyByteCount(enumerateBytes(currentName));
+                    }
+                    else if (std::filesystem::is_regular_file(currentName))
+                    {
+                        ss << "Filesystem object type: File" << std::endl;
+                        if (currentName.has_extension()) ss << "Extension: " << currentName.extension().string() << std::endl;
+                        ss << "Size of file: " << beautifyByteCount(std::filesystem::file_size(currentName));
+                    }
+                    this->app->CreateShowDialog("Properties of " + currentName.filename().string(), ss.str(), {"OK"}, true);
                 }
             }
         }, HidNpadButton_X);
