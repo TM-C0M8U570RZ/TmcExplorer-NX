@@ -10,3 +10,6 @@ N-Xplorer and NXshell are dead.  The devs haven't touched them for years and thu
 
 # Planned features: 
 Viewing common file types.  
+
+
+Join the TM_C0M8U570RZ Modding Zone Discord: https://discord.gg/xkT2Cpv3nE
